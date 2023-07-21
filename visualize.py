@@ -1,11 +1,12 @@
 import pygame as pg
 import random as rd
 import time
+from config import Args
 
 from world import World
 
-cell_size = 50
-border_size = 2
+cell_size = Args.cell_size
+border_size = Args.border_size
 
 
 class Visualize:

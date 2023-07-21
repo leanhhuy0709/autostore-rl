@@ -16,6 +16,9 @@ class Args:
     patient_factor = 10
     warmup_steps = 1000
 
+    cell_size = 50
+    border_size = 2
+
 
 class Action:
     UP = 0
