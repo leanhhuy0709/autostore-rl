@@ -1,64 +1,118 @@
-'''
 import tensorflow as tf
 from world import World, Action
 from config import Args
+import time
+import numpy as np
+from collections import deque
+import random
 
-# Create the policy network
-policy = tf.keras.Sequential([
-  tf.keras.layers.Dense(128, activation='relu'),
-  tf.keras.layers.Dense(64, activation='relu'),
-  tf.keras.layers.Dense(len(Action.LIST), activation='softmax')
-])
-
-# Create the value network
-value = tf.keras.Sequential([
-  tf.keras.layers.Dense(128, activation='relu'),
-  tf.keras.layers.Dense(64, activation='relu'),
-  tf.keras.layers.Dense(1, activation='linear')
-])
-
-# Initialize the optimizer
-optimizer = tf.keras.optimizers.Adam(learning_rate=Args.learning_rate)
-
-# Define the loss function
-loss = tf.keras.losses.MeanSquaredError()
-
-print(policy([1, 2, 3, 4, 5]))
+# noinspection PyFromFutureImport
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import save_model, load_model
 
 
+def create_q_model(input_shape, num_acts):
+    model = Sequential([
+        Dense(32, activation='relu', input_shape=input_shape),
+        Dense(32, activation='relu'),
+        Dense(num_acts, activation='linear')
+    ])
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
+    return model
 
-# Define the training loop
-for i in range(10000):
-  # Get a state from the environment
-  state = env.reset()
 
-  # Select an action from the policy network
-  action = policy(state)
+# Q-learning parameters
+gamma = Args.gamma  # Discount factor
+epsilon = Args.epsilon  # Exploration rate
+epsilon_min = 0.01
+epsilon_decay = Args.epsilon_decrement
+batch_size = Args.batch_size
 
-  # Take the action in the environment and get a reward
-  next_state, reward, done, _ = env.step(action)
+# Initialize experience replay buffer
+experience_replay_buffer = deque(maxlen=10000)
 
-  # Update the policy network
-  with tf.GradientTape() as tape:
-    # Calculate the value of the current state
-    v = value(state)
+my_world = World()
 
-    # Calculate the value of the next state
-    v_next = value(next_state)
+state_shape = (6,)
+num_actions = len(Action.LIST)
 
-    # Calculate the advantage
-    advantage = reward + gamma * v_next - v
+# Create the Q-network
+#q_model = create_q_model(state_shape, num_actions)
+q_model = load_model(Args.model_filename)
 
-    # Calculate the loss
-    loss = loss(advantage, policy(state))
+curr = time.time()
+final_reward = 0
+rate_complete = 0
 
-  # Update the policy network
-  grads = tape.gradient(loss, policy.trainable_variables)
-  optimizer.apply_gradients(zip(grads, policy.trainable_variables))
+for j in range(1, len(my_world.agents)):
+    my_world.agents[j].epsilon = 1
 
-  # If the episode is over, reset the environment
-  if done:
-    state = env.reset()
+for i in range(Args.num_epochs):
+    agent = my_world.agents[0]
+    agent.reset(my_world.generate_random_empty_position())
+    done = False
+    sum_reward = 0
 
-# Save the policy network
-policy.save('policy.h5')'''
+    while not done:
+        for j in range(1, len(my_world.agents)):
+            action = my_world.agents[j].get_action()
+            # Agent move
+            agent.move(action)
+            agent.moving(1)
+
+        state = agent.get_state()
+
+        if np.random.rand() <= epsilon:
+            action = np.random.choice(num_actions)
+        else:
+            q_values = q_model.predict(np.array([state]), verbose=0)[0]
+            action = np.argmax(q_values)
+
+        reward, done = agent.step(action)
+
+        # Agent move
+        agent.move(action)
+        agent.moving(1)
+
+        sum_reward += reward
+
+        # Update Q-values using Q-learning
+        next_state = agent.get_state()
+        experience_replay_buffer.append((state, action, reward, next_state, done))
+
+        if len(experience_replay_buffer) >= batch_size:
+            batch = random.sample(experience_replay_buffer, batch_size)
+            states_batch, actions_batch, rewards_batch, next_states_batch, done_batch = zip(*batch)
+
+            states_batch = np.stack(states_batch)
+            actions_batch = np.array(actions_batch, dtype=int)
+            rewards_batch = np.array(rewards_batch, dtype=float)
+            next_states_batch = np.stack(next_states_batch)
+            done_batch = np.array(done_batch, dtype=bool)
+
+            q_values_next = q_model.predict_on_batch(next_states_batch)
+            targets_batch = rewards_batch + (1 - done_batch) * gamma * np.amax(q_values_next, axis=1)
+
+            q_values_current = q_model.predict_on_batch(states_batch)
+            q_values_current[np.arange(batch_size), actions_batch] = targets_batch
+
+            # Train the Q-network on the current batch
+            q_model.train_on_batch(states_batch, q_values_current)
+
+    # Decay exploration rate
+    if epsilon > epsilon_min:
+        epsilon *= epsilon_decay
+
+    print("Epoch " + str(i) + ": " + str(sum_reward))
+    final_reward += sum_reward
+    if sum_reward > 0:
+        rate_complete += 1
+
+model_filename = Args.model_filename
+save_model(q_model, model_filename)
+
+print("Average Reward: " + str(round(final_reward/Args.num_epochs, 3)))
+print("Rate: " + str(round(rate_complete * 100/Args.num_epochs, 3)) + "%")
+print("Time: " + str(round((time.time() - curr) * 1000, 2)) + " ms")
