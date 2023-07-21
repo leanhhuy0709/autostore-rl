@@ -26,8 +26,8 @@ class World:
 
     def generate_random_empty_position(self):
         for i in range(100):
-            x = rd.randint(0, self.num_row - 1)
-            y = rd.randint(0, self.num_column - 1)
+            x = rd.randint(0, self.num_column - 1)
+            y = rd.randint(0, self.num_row - 1)
 
             if (x, y) in self.prev_matrix or (x, y) in self.next_matrix:
                 pass

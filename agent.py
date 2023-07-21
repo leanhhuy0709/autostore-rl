@@ -53,7 +53,7 @@ class Agent:
 
     def is_valid_position(self, position):
         x, y = position
-        return 0 <= x < self.world.num_row and 0 <= y < self.world.num_column and (
+        return 0 <= x < self.world.num_column and 0 <= y < self.world.num_row and (
             not position in self.world.prev_matrix) and (not position in self.world.next_matrix)
 
     def move(self, action: int):
