@@ -165,7 +165,7 @@ while isRunning:
         agent = my_world.agents[i]
         agent.handle_move()
 
-        if agent.next == agent.goal:
+        if agent.next == agent.goal and agent.move_state == MoveState.IDLE:
             num_complete += 1
             print("Complete: " + str(num_complete))
 
