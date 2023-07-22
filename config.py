@@ -8,7 +8,7 @@ class Args:
     state_dimension = 65
     num_agent = 5
 
-    num_epochs = 10000
+    num_epochs = 10
     learning_rate = 0.002
     #sync_rate = 40
     #replay_size = 10000
@@ -17,11 +17,9 @@ class Args:
     #warmup_steps = 1000
 
     is_using_previous_model = False
-    training_file = 'trained_model.h5'
+    previous_training_file = 'trained_model.h5'
 
     visualize_model = ''
-
-    model_filename = 'trained_model.h5'
 
     cell_size = 50
     border_size = 2

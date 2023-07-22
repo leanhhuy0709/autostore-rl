@@ -43,8 +43,12 @@ state_shape = (6,)
 num_actions = len(Action.LIST)
 
 # Create the Q-network
-#q_model = create_q_model(state_shape, num_actions)
-q_model = load_model(Args.model_filename)
+saved_file_name = 'trained_model/trained_model_3.h5'
+if Args.is_using_previous_model:
+    q_model = load_model(Args.previous_training_file)
+else:
+    q_model = create_q_model(state_shape, num_actions)
+
 
 curr = time.time()
 final_reward = 0
@@ -52,6 +56,9 @@ rate_complete = 0
 
 for j in range(1, len(my_world.agents)):
     my_world.agents[j].epsilon = 1
+    my_world.agents[j].set_speed(1)
+
+my_world.agents[0].set_speed(1)
 
 for i in range(Args.num_epochs):
     agent = my_world.agents[0]
@@ -64,7 +71,7 @@ for i in range(Args.num_epochs):
             action = my_world.agents[j].get_action()
             # Agent move
             agent.move(action)
-            agent.moving(1)
+            agent.moving()
 
         state = agent.get_state()
 
@@ -78,7 +85,7 @@ for i in range(Args.num_epochs):
 
         # Agent move
         agent.move(action)
-        agent.moving(1)
+        agent.moving()
 
         sum_reward += reward
 
@@ -114,8 +121,7 @@ for i in range(Args.num_epochs):
     if sum_reward > 0:
         rate_complete += 1
 
-model_filename = Args.model_filename
-save_model(q_model, model_filename)
+save_model(q_model, saved_file_name)
 
 print("Average Reward: " + str(round(final_reward/Args.num_epochs, 3)))
 print("Rate: " + str(round(rate_complete * 100/Args.num_epochs, 3)) + "%")
