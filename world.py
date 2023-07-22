@@ -16,7 +16,7 @@ class World:
 
         for i in range(self.num_agent):
             start_position = self.generate_random_empty_position()
-            goal_position = self.generate_random_empty_position()
+            goal_position = self.generate_random_position()
 
             agent = Agent(start_position, goal_position)
             agent.set_world(self)
@@ -35,6 +35,11 @@ class World:
                 return x, y
         print("Error, can't generate empty position")
         return -1, -1
+
+    def generate_random_position(self):
+        x = rd.randint(0, self.num_column - 1)
+        y = rd.randint(0, self.num_row - 1)
+        return x, y
 
     def remove_prev_matrix(self, position: tuple[int, int]):
         self.prev_matrix.pop(position)

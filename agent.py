@@ -7,7 +7,10 @@ import numpy as np
 
 STEP = 0.2
 
-loaded_model = load_model(Args.model_filename)
+if Args.visualize_model != '':
+    loaded_model = load_model(Args.model_filename)
+else:
+    load_model = None
 
 
 class MoveState:
@@ -21,8 +24,8 @@ class Agent:
         self.prev = None
         self.current = None
         self.next = None
-        self.is_alive = None
         self.move_state = MoveState.IDLE
+        self._speed = STEP
 
         self.gamma = None
         self.epsilon_decrement = None
@@ -41,34 +44,31 @@ class Agent:
     def set_world(self, world):
         self.world = world
 
-    def set_goal(self, goal_position):
-        self.goal = goal_position
+    def set_speed(self, speed: int):
+        if speed > 1:
+            speed = 1
+        elif speed < 0.1:
+            speed = 0.1
+        self._speed = speed
 
     def init_super_param(self):
         self.epsilon = Args.epsilon
         self.gamma = Args.gamma
         self.epsilon_decrement = Args.epsilon_decrement
 
-    def reset(self, goal_position: tuple[int, int]):
+    def reset(self, goal_position: tuple[int, int], delay: int = None, life: int = None):
         self.goal = goal_position
-        self.is_alive = True
-        # shouldn't move to more
-        self.life = int((abs(goal_position[0] - self.current[0]) + abs(goal_position[1] - self.current[1])) * 1.5)
 
-    def get_action(self):
-        if rd.random() < self.epsilon:
-            return rd.choice(Action.LIST)
-        # return rd.choice(Action.LIST)
-        # return best action
-        # Use the loaded model to predict the Q-values for the current state
-        q_values = loaded_model.predict(np.array([self.get_state()]), verbose=0)[0]
-        #print(q_values)
-        # Return the action with the highest Q-value
-        tmp = np.argmax(q_values)
-        next_pos = self.get_next_position(int(tmp))
-        if not self.is_valid_position(next_pos):
-            tmp = rd.choice(Action.LIST)
-        return tmp
+        if delay is None:
+            self.delay = 0.1 * random.randint(0, 10)
+        else:
+            self.delay = delay
+
+        # shouldn't move to more
+        if life is None:
+            self.life = int((abs(goal_position[0] - self.current[0]) + abs(goal_position[1] - self.current[1])) * 1.5) + 1
+        else:
+            self.life = life
 
     def is_valid_position(self, position):
         x, y = position
@@ -76,6 +76,10 @@ class Agent:
             not position in self.world.prev_matrix) and (not position in self.world.next_matrix)
 
     def move(self, action: int):
+        """
+        Set prev and next
+        If is not valid move => STAND
+        """
         self.world.remove_prev_matrix(self.prev)
         self.prev = self.next
         self.world.add_prev_matrix(self.prev, self)
@@ -90,6 +94,33 @@ class Agent:
 
         self.move_state = MoveState.MOVING
 
+    def moving(self):
+        direct = self.next[0] - self.prev[0], self.next[1] - self.prev[1]
+        next_pos = self.current[0] + direct[0] * self._speed, self.current[1] + direct[1] * self._speed
+
+        if self.current[0] <= self.next[0] <= next_pos[0] or self.current[0] >= self.next[0] >= next_pos[0]:
+            if self.current[1] <= self.next[1] <= next_pos[1] or self.current[1] >= self.next[1] >= next_pos[1]:
+                self.current = self.next
+                self.move_state = MoveState.IDLE
+                return
+
+        self.current = next_pos
+
+    def handle_move(self, time_unit: int)->bool:
+        if self.delay > 0:
+            self.delay -= time_unit
+            return False
+
+        self.delay = 0
+        if self.move_state == MoveState.IDLE:
+            if self.next == self.goal:
+                return True
+            action = self.get_action()
+            self.move(action)
+        elif self.move_state == MoveState.MOVING:
+            self.moving()
+        return False
+
     def get_next_position(self, action: int):
         if action == Action.UP:
             return self.prev[0], self.prev[1] - 1
@@ -101,34 +132,13 @@ class Agent:
             return self.prev[0] + 1, self.prev[1]
         return self.prev
 
-    def update(self, delay=0.1):
-        if self.delay > 0:
-            self.delay -= delay
-            return
-        else:
-            self.delay = 0
-        if self.move_state == MoveState.IDLE:
-
-            if self.next == self.goal:
-                new_goal = self.world.generate_random_empty_position()
-                self.set_goal(new_goal)
-                self.delay = rd.randint(1, 10) * delay
-
-            action = self.get_action()
-            self.move(action)
-        elif self.move_state == MoveState.MOVING:
-            self.moving()
-
-    def moving(self, step=STEP):
-        direct = self.next[0] - self.prev[0], self.next[1] - self.prev[1]
-        if self.isEqual(self.current, self.next):
-            self.move_state = MoveState.IDLE
-        else:
-            self.current = self.current[0] + direct[0] * step, self.current[1] + direct[1] * step
-
     @staticmethod
     def isEqual(coord1: tuple[float, float], coord2: tuple[float, float]):
         return abs(coord1[0] - coord2[0]) < 0.0001 and abs(coord1[1] - coord2[1]) < 0.0001
+
+    '''
+    Edit some function below
+    '''
 
     def step(self, action) -> tuple[float, bool]:
         self.life -= 1.0
@@ -164,3 +174,31 @@ class Agent:
                 state[i + 2] = 2
 
         return state
+
+    def get_action(self):
+        if rd.random() < self.epsilon:
+            return rd.choice(Action.LIST)
+        return self.get_best_action()
+
+    def get_best_action(self):
+        if load_model is None:
+            return rd.choice(Action.LIST)
+
+        # return best action
+        # Use the loaded model to predict the Q-values for the current state
+        q_values = loaded_model.predict(np.array([self.get_state()]), verbose=0)[0]
+        # print(q_values)
+        # Return the action with the highest Q-value
+        tmp = np.argmax(q_values)
+        next_pos = self.get_next_position(int(tmp))
+        if not self.is_valid_position(next_pos):
+            return rd.choice(Action.LIST)
+
+        d1 = abs(self.current[0] - self.goal[0]) + abs(self.current[1] - self.goal[1])
+        d2 = abs(next_pos[0] - self.goal[0]) + abs(next_pos[1] - self.goal[1])
+
+        if d2 > d1:
+            if rd.random() < 0.5:
+                return rd.choice(Action.LIST)
+
+        return tmp

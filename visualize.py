@@ -143,6 +143,7 @@ visualize.init()
 
 for i in range(len(my_world.agents)):
     agent = my_world.agents[i]
+    agent.set_speed(0.1)
     DataPlot.ideal_lengths.append([])
     DataPlot.real_lengths.append([])
     DataPlot.time.append(0)
@@ -162,32 +163,23 @@ num_complete = 0
 while isRunning:
     for i in range(len(my_world.agents)):
         agent = my_world.agents[i]
-        if agent.delay > 0:
-            agent.delay -= delay
-            continue
-        else:
-            agent.delay = 0
-        if agent.move_state == MoveState.IDLE:
-            if agent.next == agent.goal:
+        agent.handle_move()
 
-                num_complete += 1
-                print("Complete: " + str(num_complete))
+        if agent.next == agent.goal:
+            num_complete += 1
+            print("Complete: " + str(num_complete))
 
-                new_goal = my_world.generate_random_empty_position()
-                agent.set_goal(new_goal)
-                agent.delay = rd.randint(1, 3) * delay
-                DataPlot.real_lengths[i].append(Time - DataPlot.time[i])
-                DataPlot.time[i] = Time + agent.delay
-                DataPlot.ideal_lengths[i].append(abs(agent.goal[1] - agent.next[1]) + abs(agent.goal[0] - agent.next[0]))
-            else:
-                action = agent.get_action()
-                agent.move(action)
-        elif agent.move_state == MoveState.MOVING:
-            agent.moving(step)
+            new_goal = my_world.generate_random_position()
+            agent.reset(new_goal)
+            DataPlot.real_lengths[i].append(Time - DataPlot.time[i])
+            DataPlot.time[i] = Time + agent.delay
+            DataPlot.ideal_lengths[i].append(abs(agent.goal[1] - agent.next[1]) + abs(agent.goal[0] - agent.next[0]))
+
     isRunning = visualize.update
     Time += 0.1
     time.sleep(0.05)
 
+# Draw Plot
 for i in range(len(my_world.agents)):
     DataPlot.ideal_lengths[i].pop()
 
