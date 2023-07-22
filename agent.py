@@ -106,7 +106,7 @@ class Agent:
 
         self.current = next_pos
 
-    def handle_move(self, time_unit: int)->bool:
+    def handle_move(self, time_unit: int = 0.1) -> bool:
         if self.delay > 0:
             self.delay -= time_unit
             return False
