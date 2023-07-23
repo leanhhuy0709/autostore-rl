@@ -80,9 +80,7 @@ class Agent:
         Set prev and next
         If is not valid move => STAND
         """
-        self.world.remove_prev_matrix(self.prev)
-        self.prev = self.next
-        self.world.add_prev_matrix(self.prev, self)
+        
 
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
@@ -102,6 +100,9 @@ class Agent:
             if self.current[1] <= self.next[1] <= next_pos[1] or self.current[1] >= self.next[1] >= next_pos[1]:
                 self.current = self.next
                 self.move_state = MoveState.IDLE
+                self.world.remove_prev_matrix(self.prev)
+                self.prev = self.next
+                self.world.add_prev_matrix(self.prev, self)
                 return
 
         self.current = next_pos
