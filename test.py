@@ -1,5 +1,2 @@
-from tensorflow.keras.models import save_model, load_model
-model_filename = "trained_model.h5"
-loaded_model = load_model(model_filename)
-
-print(loaded_model)
+print(1, flush=False)
+print(2, flush=False)

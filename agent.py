@@ -8,7 +8,7 @@ import numpy as np
 STEP = 0.2
 
 if Args.visualize_model != '':
-    loaded_model = load_model(Args.model_filename)
+    loaded_model = load_model(Args.visualize_model)
 else:
     load_model = None
 
@@ -66,7 +66,8 @@ class Agent:
 
         # shouldn't move to more
         if life is None:
-            self.life = int((abs(goal_position[0] - self.current[0]) + abs(goal_position[1] - self.current[1])) * 1.5) + 1
+            self.life = int(
+                (abs(goal_position[0] - self.current[0]) + abs(goal_position[1] - self.current[1])) * 2) + 1
         else:
             self.life = life
 
@@ -80,10 +81,6 @@ class Agent:
         Set prev and next
         If is not valid move => STAND
         """
-        self.world.remove_prev_matrix(self.prev)
-        self.prev = self.next
-        self.world.add_prev_matrix(self.prev, self)
-
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
             return
@@ -102,6 +99,9 @@ class Agent:
             if self.current[1] <= self.next[1] <= next_pos[1] or self.current[1] >= self.next[1] >= next_pos[1]:
                 self.current = self.next
                 self.move_state = MoveState.IDLE
+                self.world.remove_prev_matrix(self.prev)
+                self.prev = self.next
+                self.world.add_prev_matrix(self.prev, self)
                 return
 
         self.current = next_pos
@@ -115,7 +115,7 @@ class Agent:
         if self.move_state == MoveState.IDLE:
             if self.next == self.goal:
                 return True
-            action = self.get_action()
+            action = self.get_action_2()
             self.move(action)
         elif self.move_state == MoveState.MOVING:
             self.moving()
@@ -145,11 +145,12 @@ class Agent:
 
         if self.life <= 0:
             d = abs(self.goal[0] - self.current[0]) + abs(self.goal[1] - self.current[1])
-            return -2.0 * (1 + d/(self.world.num_row + self.world.num_column)), True
+            # return -0.1, True
+            return -3.0 * (1 + d/(self.world.num_row + self.world.num_column)), True
 
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
-            return -0.2, False
+            return -0.5, False
 
         if self.isEqual(next_pos, self.goal):
             return 10.0, True
@@ -175,30 +176,90 @@ class Agent:
 
         return state
 
-    def get_action(self):
+    def get_action(self, model=None):
         if rd.random() < self.epsilon:
             return rd.choice(Action.LIST)
-        return self.get_best_action()
+        return self.get_best_action(model)
 
-    def get_best_action(self):
-        if load_model is None:
-            return rd.choice(Action.LIST)
+    def get_action_2(self, model=None):
+        if rd.random() < self.epsilon:
+            return self.get_random_action_with_rate()
+        return self.get_best_action(model)
 
-        # return best action
+    def get_action_3(self, model=None):
+        if rd.random() < self.epsilon:
+            my_list = []
+            for i in range(4):
+                next_pos = self.get_next_position(i)
+                if not self.is_valid_position(next_pos):
+                    continue
+                d1 = abs(next_pos[0] - self.goal[0]) + abs(next_pos[1] - self.goal[1])
+                d2 = abs(self.prev[0] - self.goal[0]) + abs(self.prev[1] - self.goal[1])
+                if d1 <= d2:
+                    my_list.append(i)
+            if len(my_list) == 0:
+                pass
+                # print('Error')
+
+            if len(my_list) > 0:
+                return np.random.choice(my_list)
+        return self.get_best_action(model)
+
+    @staticmethod
+    def get_2_max_index(array):
+        idx1 = idx2 = 0
+        max1 = max2 = -9999999
+        for i in range(len(array)):
+            if max1 < array[i]:
+                max2 = max1
+                idx2 = idx1
+                max1 = array[i]
+                idx1 = i
+            elif max2 < array[i]:
+                max2 = array[i]
+                idx2 = i
+        return idx1, idx2
+
+    def get_random_action_with_rate(self):
+        default_rate = [0.2, 0.2, 0.2, 0.2, 0.2]
+        curr_rate = 0
+
+        sum_rate = 0.2
+        for i in range(4):
+            next_pos = self.get_next_position(i)
+            if not self.is_valid_position(next_pos):
+                default_rate[i] *= 0.1
+                sum_rate += default_rate[i]
+                continue
+            d1 = abs(next_pos[0] - self.goal[0]) + abs(next_pos[1] - self.goal[1])
+            d2 = abs(self.current[0] - self.goal[0]) + abs(self.current[1] - self.goal[1])
+            if d1 > d2:
+                default_rate[i] *= 0.5
+            elif d1 < d2:
+                default_rate[i] *= 2
+            sum_rate += default_rate[i]
+
+        for i in range(5):
+            default_rate[i] /= sum_rate
+
+        value = np.random.rand()
+        for i in range(4):
+            curr_rate += default_rate[i]
+            if value <= curr_rate:
+                return i
+        return Action.STATIC
+
+    def get_best_action(self, model):
+        if model is None:
+            if loaded_model is None:
+                return self.get_random_action_with_rate()
+            model = loaded_model
+
         # Use the loaded model to predict the Q-values for the current state
-        q_values = loaded_model.predict(np.array([self.get_state()]), verbose=0)[0]
-        # print(q_values)
-        # Return the action with the highest Q-value
-        tmp = np.argmax(q_values)
-        next_pos = self.get_next_position(int(tmp))
-        if not self.is_valid_position(next_pos):
-            return rd.choice(Action.LIST)
+        q_values = model.predict(np.array([self.get_state()]), verbose=0)[0]
 
-        d1 = abs(self.current[0] - self.goal[0]) + abs(self.current[1] - self.goal[1])
-        d2 = abs(next_pos[0] - self.goal[0]) + abs(next_pos[1] - self.goal[1])
+        idx1, idx2 = Agent.get_2_max_index(q_values)
 
-        if d2 > d1:
-            if rd.random() < 0.5:
-                return rd.choice(Action.LIST)
+        tmp = idx1
 
         return tmp

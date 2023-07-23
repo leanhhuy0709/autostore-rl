@@ -62,7 +62,7 @@ class Visualize:
             x = self.num_col * cell_size + 200
             y = cell_size + j * cell_size + cell_size/8
             value = round(Time - DataPlot.time[j], 1)
-            if value < 0:
+            if value <= 0:
                 value = 0
             text_surface = self.font.render(str(value), False, (0, 0, 0))
             self.window.blit(text_surface, (x, y))
@@ -165,7 +165,7 @@ while isRunning:
         agent = my_world.agents[i]
         agent.handle_move()
 
-        if agent.next == agent.goal:
+        if agent.next == agent.goal and agent.move_state == MoveState.IDLE:
             num_complete += 1
             print("Complete: " + str(num_complete))
 
@@ -220,7 +220,7 @@ plt.plot(range(len(val)), y3, marker='o', linestyle='-', color='red', label='Rat
 plt.xlabel('ith completions')
 plt.ylabel('Average ratio between real path and ideal path')
 
-plt.title('Ratio graph between actual and ideal path with 30000 trains')
+plt.title('Ratio graph between actual and ideal path with 20000 trains')
 
 plt.legend()
 
