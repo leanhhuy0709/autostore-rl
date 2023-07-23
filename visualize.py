@@ -134,6 +134,7 @@ class DataPlot:
     ideal_lengths = []
     real_lengths = []
     time = []
+    count = []
 
 
 my_world = World()
@@ -147,6 +148,7 @@ for i in range(len(my_world.agents)):
     DataPlot.ideal_lengths.append([])
     DataPlot.real_lengths.append([])
     DataPlot.time.append(0)
+    DataPlot.count.append(0)
 
     d = abs(agent.goal[1] - agent.next[1]) + abs(agent.goal[0] - agent.next[0])
     DataPlot.ideal_lengths[i].append(d)
