@@ -77,7 +77,7 @@ for i in range(Args.num_epochs):
 
         state = agent.get_state()
 
-        if np.random.rand() < 0.1:
+        if np.random.rand() < 0.75:
             action = agent.get_action_3(q_model)
         else:
             action = agent.get_action(q_model)

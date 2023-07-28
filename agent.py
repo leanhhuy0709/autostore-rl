@@ -38,6 +38,7 @@ class Agent:
 
         self.delay = 0
         self.life = 0
+        self.count = 0
 
         self.init_super_param()
 
@@ -70,6 +71,8 @@ class Agent:
                 (abs(goal_position[0] - self.current[0]) + abs(goal_position[1] - self.current[1])) * 2) + 1
         else:
             self.life = life
+
+        self.count = 0
 
     def is_valid_position(self, position):
         x, y = position
@@ -117,6 +120,11 @@ class Agent:
                 return True
             action = self.get_action_2()
             self.move(action)
+
+            if self.prev == self.next:
+                self.count += 0
+            else:
+                self.count += 1
         elif self.move_state == MoveState.MOVING:
             self.moving()
         return False

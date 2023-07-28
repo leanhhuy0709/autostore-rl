@@ -36,6 +36,19 @@ class World:
         print("Error, can't generate empty position")
         return -1, -1
 
+    def generate_random_position_with_distance(self, start_position, d: int):
+        xSt, ySt = start_position
+        for i in range(100):
+            x = rd.randint(0, self.num_column - 1)
+            y = rd.randint(0, self.num_row - 1)
+
+            if (x - xSt) ** 2 + (y - ySt) ** 2 < d * d:
+                pass
+            else:
+                return x, y
+        print("Error, can't generate random position with distance")
+        return self.generate_random_position()
+
     def generate_random_position(self):
         x = rd.randint(0, self.num_column - 1)
         y = rd.randint(0, self.num_row - 1)
