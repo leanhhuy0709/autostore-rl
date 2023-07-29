@@ -6,7 +6,8 @@ class Args:
     num_column = 10
     num_row = 10
     #state_dimension = 65
-    num_agent = 7
+    num_agent = 10
+
 
     num_epochs = 50000
     learning_rate = 0.002
@@ -18,7 +19,6 @@ class Args:
 
     is_using_previous_model = True
     previous_training_file = 'trained_model/trained_model_13.h5'
-
     visualize_model = 'trained_model/trained_model_13.h5'
     save_model = 'trained_model/trained_model_13.h5'
 

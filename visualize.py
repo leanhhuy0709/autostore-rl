@@ -144,7 +144,7 @@ visualize.init()
 
 for i in range(len(my_world.agents)):
     agent = my_world.agents[i]
-    agent.set_speed(0.1)
+    agent.set_speed(0.2)
     DataPlot.ideal_lengths.append([])
     DataPlot.real_lengths.append([])
     DataPlot.time.append(0)
@@ -166,9 +166,7 @@ while isRunning:
     for i in range(len(my_world.agents)):
         agent = my_world.agents[i]
         agent.handle_move()
-
         DataPlot.time[i] += 0.1
-
         if agent.next == agent.goal and agent.move_state == MoveState.IDLE:
             num_complete += 1
             print("Complete: " + str(num_complete))
