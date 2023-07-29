@@ -217,13 +217,18 @@ for i in range(len(DataPlot.ideal_lengths)):
     val2.append(DataPlot.real_lengths[i] - DataPlot.ideal_lengths[i])
 
 sum_val = 0
+sum_val2 = 0
 y3 = []
+y4 = []
 for i in range(len(val)):
+    sum_val += val[i]
     sum_val += val2[i]
     y3.append(sum_val / (i + 1))
+    y4.append(sum_val / (i + 1))
     # y3.append(val2[i])
 
 plt.plot(range(len(val)), y3, marker='o', linestyle='-', color='red', label='Rate')
+plt.plot(range(len(val)), y4, marker='o', linestyle='-', color='blue', label='Rate')
 
 plt.xlabel('ith completions')
 plt.ylabel('Average ratio between real path and ideal path')

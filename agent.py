@@ -153,8 +153,8 @@ class Agent:
 
         if self.life <= 0:
             d = abs(self.goal[0] - self.current[0]) + abs(self.goal[1] - self.current[1])
-            # return -0.1, True
-            return -3.0 * (1 + d/(self.world.num_row + self.world.num_column)), True
+            return -0.1, True
+            # return -3.0 * (1 + d/(self.world.num_row + self.world.num_column)), True
 
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
@@ -168,8 +168,22 @@ class Agent:
     def get_state(self) -> list[int]:
         state = [0, 0, 0, 0, 0, 0]
 
-        state[0] = self.goal[0] - self.current[0]
-        state[1] = self.goal[1] - self.current[1]
+        dx = self.goal[0] - self.current[0]
+        dy = self.goal[1] - self.current[1]
+
+        if dx > 0:
+            state[0] = 1
+        elif dx < 0:
+            state[0] = -1
+        else:
+            state[0] = 0
+
+        if dy > 0:
+            state[1] = 1
+        elif dy < 0:
+            state[1] = -1
+        else:
+            state[1] = 0
 
         for i in range(len(Action.DIRECT)):
             d = Action.DIRECT[i]
