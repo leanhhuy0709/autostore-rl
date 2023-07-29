@@ -220,9 +220,9 @@ y3 = []
 y4 = []
 for i in range(len(val)):
     sum_val += val[i]
-    sum_val2 += val2[i]
+    sum_val += val2[i]
     y3.append(sum_val / (i + 1))
-    y4.append(sum_val2 / (i + 1))
+    y4.append(sum_val / (i + 1))
     # y3.append(val2[i])
 
 plt.plot(range(len(val)), y3, marker='o', linestyle='-', color='red', label='Rate')

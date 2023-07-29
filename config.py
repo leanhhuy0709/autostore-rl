@@ -1,14 +1,15 @@
 class Args:
     epsilon = 1
     gamma = 0.9
-    epsilon_decrement = 0.987
+    epsilon_decrement = 0.99997
     num_action = 5
     num_column = 10
     num_row = 10
     #state_dimension = 65
     num_agent = 10
 
-    num_epochs = 2000
+
+    num_epochs = 50000
     learning_rate = 0.002
     #sync_rate = 40
     #replay_size = 10000
@@ -17,10 +18,9 @@ class Args:
     #warmup_steps = 1000
 
     is_using_previous_model = True
-    previous_training_file = 'trained_model/trained_model_12.h5'
-
-    visualize_model = 'trained_model/trained_model_12.h5'
-    save_model = 'trained_model/trained_model_12.h5'
+    previous_training_file = 'trained_model/trained_model_13.h5'
+    visualize_model = 'trained_model/trained_model_13.h5'
+    save_model = 'trained_model/trained_model_13.h5'
 
     cell_size = 50
     border_size = 2
