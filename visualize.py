@@ -44,32 +44,32 @@ class Visualize:
 
         for j in range(len(self.world.agents)):
             x = self.num_col * cell_size + 50
-            y = cell_size + j * cell_size
+            y = j * cell_size
             pg.draw.rect(self.window, self.colors[j], (x, y, cell_size, cell_size))
 
         for j in range(len(self.world.agents)):
             x = self.num_col * cell_size + 50
-            y = cell_size + j * cell_size
+            y = j * cell_size
             pg.draw.rect(self.window, (0, 0, 0), (x, y, cell_size, cell_size), border_size)
 
         for j in range(len(self.world.agents)):
             x = self.num_col * cell_size + 125
-            y = cell_size + j * cell_size + cell_size/8
+            y = j * cell_size + cell_size/8
             text_surface = self.font.render(str(len(DataPlot.real_lengths[j])), False, (0, 0, 0))
             self.window.blit(text_surface, (x, y))
 
         for j in range(len(self.world.agents)):
             x = self.num_col * cell_size + 200
-            y = cell_size + j * cell_size + cell_size/8
-            value = round(Time - DataPlot.time[j], 1)
-            if value < 0:
+            y = j * cell_size + cell_size/8
+            value = round(self.world.agents[j].count, 1) # round(DataPlot.time[j], 1)
+            if value <= 0:
                 value = 0
             text_surface = self.font.render(str(value), False, (0, 0, 0))
             self.window.blit(text_surface, (x, y))
 
         for j in range(len(self.world.agents)):
             x = self.num_col * cell_size + 300
-            y = cell_size + j * cell_size + cell_size/8
+            y = j * cell_size + cell_size/8
             text_surface = self.font.render(str(DataPlot.ideal_lengths[j][len(DataPlot.ideal_lengths[j]) - 1]),
                                             False, (0, 0, 0))
             self.window.blit(text_surface, (x, y))
@@ -134,6 +134,7 @@ class DataPlot:
     ideal_lengths = []
     real_lengths = []
     time = []
+    count = []
 
 
 my_world = World()
@@ -143,10 +144,11 @@ visualize.init()
 
 for i in range(len(my_world.agents)):
     agent = my_world.agents[i]
-    agent.set_speed(0.1)
+    agent.set_speed(0.2)
     DataPlot.ideal_lengths.append([])
     DataPlot.real_lengths.append([])
     DataPlot.time.append(0)
+    DataPlot.count.append(0)
 
     d = abs(agent.goal[1] - agent.next[1]) + abs(agent.goal[0] - agent.next[0])
     DataPlot.ideal_lengths[i].append(d)
@@ -164,15 +166,14 @@ while isRunning:
     for i in range(len(my_world.agents)):
         agent = my_world.agents[i]
         agent.handle_move()
-
+        DataPlot.time[i] += 0.1
         if agent.next == agent.goal and agent.move_state == MoveState.IDLE:
             num_complete += 1
             print("Complete: " + str(num_complete))
 
-            new_goal = my_world.generate_random_position()
+            new_goal = my_world.generate_random_position_with_distance(agent.prev, 1)
+            DataPlot.real_lengths[i].append(round(agent.count, 1))
             agent.reset(new_goal)
-            DataPlot.real_lengths[i].append(Time - DataPlot.time[i])
-            DataPlot.time[i] = Time + agent.delay
             DataPlot.ideal_lengths[i].append(abs(agent.goal[1] - agent.next[1]) + abs(agent.goal[0] - agent.next[0]))
 
     isRunning = visualize.update
@@ -203,24 +204,34 @@ print(DataPlot.real_lengths)
 
 val = []
 temp = []
+val2 = []
 
 for i in range(len(DataPlot.ideal_lengths)):
     if DataPlot.ideal_lengths[i] == 0:
         DataPlot.ideal_lengths[i] = 1
     val.append(DataPlot.real_lengths[i] / DataPlot.ideal_lengths[i])
 
+for i in range(len(DataPlot.ideal_lengths)):
+    val2.append(DataPlot.real_lengths[i] - DataPlot.ideal_lengths[i])
+
 sum_val = 0
+sum_val2 = 0
 y3 = []
+y4 = []
 for i in range(len(val)):
     sum_val += val[i]
+    sum_val2 += val2[i]
     y3.append(sum_val / (i + 1))
+    y4.append(sum_val2 / (i + 1))
+    # y3.append(val2[i])
 
 plt.plot(range(len(val)), y3, marker='o', linestyle='-', color='red', label='Rate')
+plt.plot(range(len(val)), y4, marker='o', linestyle='-', color='blue', label='Rate')
 
 plt.xlabel('ith completions')
 plt.ylabel('Average ratio between real path and ideal path')
 
-plt.title('Ratio graph between actual and ideal path with 30000 trains')
+plt.title('Ratio graph between actual and ideal path with 20000 trains')
 
 plt.legend()
 

@@ -9,6 +9,8 @@ import time
 import numpy as np
 from collections import deque
 import random
+import os
+import sys
 
 # noinspection PyFromFutureImport
 from tensorflow.keras import Sequential
@@ -20,7 +22,7 @@ from tensorflow.keras.models import save_model, load_model
 def create_q_model(input_shape, num_acts):
     model = Sequential([
         Dense(32, activation='relu', input_shape=input_shape),
-        Dense(32, activation='relu'),
+        Dense(64, activation='relu'),
         Dense(num_acts, activation='linear')
     ])
     model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
@@ -43,7 +45,7 @@ state_shape = (6,)
 num_actions = len(Action.LIST)
 
 # Create the Q-network
-saved_file_name = 'trained_model/trained_model_3.h5'
+saved_file_name = Args.save_model
 if Args.is_using_previous_model:
     q_model = load_model(Args.previous_training_file)
 else:
@@ -75,11 +77,10 @@ for i in range(Args.num_epochs):
 
         state = agent.get_state()
 
-        if np.random.rand() <= epsilon:
-            action = np.random.choice(num_actions)
+        if np.random.rand() < 0.75:
+            action = agent.get_action_3(q_model)
         else:
-            q_values = q_model.predict(np.array([state]), verbose=0)[0]
-            action = np.argmax(q_values)
+            action = agent.get_action(q_model)
 
         reward, done = agent.step(action)
 
@@ -113,11 +114,15 @@ for i in range(Args.num_epochs):
             q_model.train_on_batch(states_batch, q_values_current)
 
     # Decay exploration rate
-    if epsilon > epsilon_min:
-        epsilon *= epsilon_decay
+    if agent.epsilon > epsilon_min:
+        agent.epsilon *= epsilon_decay
 
-    print("Epoch " + str(i) + ": " + str(sum_reward))
     final_reward += sum_reward
+
+    print("\rEpoch " + str(i) + ": reward = " + str(round(sum_reward, 1)) + ", complete_rate = " +
+          str(round(rate_complete/(i + 1) * 100)) + " %, epsilon: " + str(round(agent.epsilon, 2)), flush=True)
+    #print(f"\rEpoch:{i + 1}/{Args.num_epochs}----reward:{round(sum_reward, 1)}----complete_rate:{round(rate_complete/(i + 1) * 100)}%----epsilon:{round(agent.epsilon, 2)}", flush=True)
+
     if sum_reward > 0:
         rate_complete += 1
 
@@ -125,4 +130,4 @@ save_model(q_model, saved_file_name)
 
 print("Average Reward: " + str(round(final_reward/Args.num_epochs, 3)))
 print("Rate: " + str(round(rate_complete * 100/Args.num_epochs, 3)) + "%")
-print("Time: " + str(round((time.time() - curr) * 1000, 2)) + " ms")
+print("Time: " + str(round((time.time() - curr), 2)) + " s")
