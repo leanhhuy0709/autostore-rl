@@ -86,6 +86,7 @@ class Agent:
         """
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
+            # print("Too bad")
             return
 
         self.world.remove_next_matrix(self.next)
@@ -158,7 +159,7 @@ class Agent:
 
         next_pos = self.get_next_position(action)
         if not self.is_valid_position(next_pos):
-            return -0.5, False
+            return -2.0, False
 
         if self.isEqual(next_pos, self.goal):
             return 10.0, True
@@ -240,7 +241,7 @@ class Agent:
             elif max2 < array[i]:
                 max2 = array[i]
                 idx2 = i
-        return idx1, idx2
+        return idx1, idx2, max1, max2
 
     def get_random_action_with_rate(self):
         default_rate = [0.2, 0.2, 0.2, 0.2, 0.2]
@@ -280,8 +281,14 @@ class Agent:
         # Use the loaded model to predict the Q-values for the current state
         q_values = model.predict(np.array([self.get_state()]), verbose=0)[0]
 
-        idx1, idx2 = Agent.get_2_max_index(q_values)
+        # print(q_values)
 
-        tmp = idx1
+        idx1, idx2, max1, max2 = Agent.get_2_max_index(q_values)
 
-        return tmp
+        rate = max1 * 2 / (max1 * 2 + max2)
+        if rd.random() < rate:
+            tmp = idx1
+        else:
+            tmp = idx2
+
+        return idx1

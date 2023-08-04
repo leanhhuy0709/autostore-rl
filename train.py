@@ -90,7 +90,7 @@ sum_time = 0
 
 for i in range(Args.num_epochs):
     agent = my_world.agents[0]
-    agent.reset(my_world.generate_random_empty_position())
+    agent.reset(my_world.generate_random_position_with_distance(agent.prev, 3))
     done = False
     sum_reward = 0
     st_time = time.time()
@@ -104,8 +104,8 @@ for i in range(Args.num_epochs):
 
         state = agent.get_state()
 
-        if np.random.rand() < 0.1:
-            action = agent.get_action_3(q_model)
+        if np.random.rand() < 0.01:
+            action = agent.get_action_2(q_model)
         else:
             action = agent.get_action(q_model)
 
@@ -147,18 +147,23 @@ for i in range(Args.num_epochs):
     final_reward += sum_reward
 
     ed_time = time.time()
-
-    sum_time += ed_time - st_time
+    if i % 7 == 0:
+        sum_time = ed_time - st_time
+    else:
+        sum_time += ed_time - st_time
 
     # print("\rEpoch " + str(i) + ": reward = " + str(round(sum_reward, 1)) + ", complete_rate = " +
     # str(round(rate_complete/(i + 1) * 100)) + " %, epsilon: " + str(round(agent.epsilon, 2)), end='\r')
     print(f"\rEpoch:{i + 1}/{Args.num_epochs}----"
-          f"time_remaining:{export_time_to_HMS(sum_time / (i + 1) * (Args.num_epochs - i - 1))}----"
+          f"time_remaining:{export_time_to_HMS(sum_time / (i % 7 + 1) * (Args.num_epochs - i - 1))}----"
           f"complete_rate:{round(rate_complete / (i + 1) * 100)}%----epsilon:{round(agent.epsilon, 2)}----"
-          f"reward:{round(sum_reward, 1)}", end="\r")
+          f"reward:{round(sum_reward, 1)}", end="\n")
 
     if sum_reward > 0:
         rate_complete += 1
+
+    if i % 500 == 499:
+        save_model(q_model, saved_file_name)
 
 save_model(q_model, saved_file_name)
 

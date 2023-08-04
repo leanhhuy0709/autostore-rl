@@ -4,6 +4,7 @@ import time
 from config import Args
 from agent import *
 import matplotlib.pyplot as plt
+from wall import Wall
 
 from world import World
 
@@ -92,6 +93,12 @@ class Visualize:
             goal_x *= cell_size
             goal_y *= cell_size
             pg.draw.circle(self.window, self.colors[j], (goal_x + cell_size / 2, goal_y + cell_size / 2), cell_size / 3)
+
+        for w in self.world.walls:
+            x, y = w.position
+            x *= cell_size
+            y *= cell_size
+            pg.draw.rect(self.window, (0, 0, 0), (x, y, cell_size, cell_size))
 
         for row in range(self.num_row):
             for col in range(self.num_col):
@@ -220,18 +227,18 @@ y3 = []
 y4 = []
 for i in range(len(val)):
     sum_val += val[i]
-    sum_val += val2[i]
+    sum_val2 += val2[i]
     y3.append(sum_val / (i + 1))
-    y4.append(sum_val / (i + 1))
+    y4.append(sum_val2 / (i + 1))
     # y3.append(val2[i])
 
-plt.plot(range(len(val)), y3, marker='o', linestyle='-', color='red', label='Rate')
-plt.plot(range(len(val)), y4, marker='o', linestyle='-', color='blue', label='Rate')
+plt.plot(range(len(val)), y3, marker='.', linestyle='-', color='red', label='Rate')
+plt.plot(range(len(val)), y4, marker='.', linestyle='-', color='blue', label='Rate')
 
 plt.xlabel('ith completions')
 plt.ylabel('Average ratio between real path and ideal path')
 
-plt.title('Ratio graph between actual and ideal path with 20000 trains')
+plt.title('Different graph between actual and ideal path with 20000 trains')
 
 plt.legend()
 

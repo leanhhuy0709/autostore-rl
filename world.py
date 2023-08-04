@@ -1,6 +1,7 @@
 from config import *
 from agent import Agent
 import random as rd
+from wall import Wall
 
 
 class World:
@@ -13,6 +14,23 @@ class World:
         self.next_matrix = {}
 
         self.agents = []
+
+        self.num_wall = len(Args.CUSTOM_WALL)
+        self.walls = []
+        self.wall_matrix = {}
+
+        for i in range(self.num_wall):
+            wall_position = Args.CUSTOM_WALL[i]
+            x, y = wall_position
+            if x < 0 or x >= self.num_row or y < 0 or y >= self.num_column:
+                continue
+
+            curr_wall = Wall(wall_position)
+            curr_wall.set_world(self)
+            self.prev_matrix[wall_position] = curr_wall
+            self.next_matrix[wall_position] = curr_wall
+            self.wall_matrix[wall_position] = curr_wall
+            self.walls.append(curr_wall)
 
         for i in range(self.num_agent):
             start_position = self.generate_random_empty_position()
@@ -29,7 +47,7 @@ class World:
             x = rd.randint(0, self.num_column - 1)
             y = rd.randint(0, self.num_row - 1)
 
-            if (x, y) in self.prev_matrix or (x, y) in self.next_matrix:
+            if (x, y) in self.prev_matrix or (x, y) in self.next_matrix or (x, y) in self.wall_matrix:
                 pass
             else:
                 return x, y
@@ -42,7 +60,7 @@ class World:
             x = rd.randint(0, self.num_column - 1)
             y = rd.randint(0, self.num_row - 1)
 
-            if (x - xSt) ** 2 + (y - ySt) ** 2 < d * d:
+            if (x - xSt) ** 2 + (y - ySt) ** 2 < d * d or (x, y) in self.wall_matrix:
                 pass
             else:
                 return x, y
@@ -50,9 +68,16 @@ class World:
         return self.generate_random_position()
 
     def generate_random_position(self):
-        x = rd.randint(0, self.num_column - 1)
-        y = rd.randint(0, self.num_row - 1)
-        return x, y
+        for i in range(100):
+            x = rd.randint(0, self.num_column - 1)
+            y = rd.randint(0, self.num_row - 1)
+
+            if (x, y) in self.wall_matrix:
+                pass
+            else:
+                return x, y
+        print("Error, can't generate empty position")
+        return -1, -1
 
     def remove_prev_matrix(self, position: tuple[int, int]):
         self.prev_matrix.pop(position)
